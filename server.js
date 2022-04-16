@@ -1,5 +1,6 @@
 const express = require('express');
 const mysql = require('mysql2');
+const cTable = require('console.table');
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -30,19 +31,27 @@ INNER JOIN role ON role.department_id = department.id
 INNER JOIN employee ON role.id = employee.role_id;`;
 
 db.query(`${newQuery}`, function (err, results) {
-    console.table(results);
     console.log(results);
+    newList = findManagerName(results)
+
+    console.table(newList);
 });
+    
 
 function findManagerName(array) {
     array.forEach(element => {
-        if (element.manager_id === !null) {
+        console.log(element.manager_id);
+        if (element.manager_id) {
+            console.log(element.manager_id);
             for (i=0; i<array.length; i++) {
-                if (element.manager_id === array[i].manager_id)
+                if (element.manager_id === array[i].id) {
+                    element.manager_id = array[i].first_name + ' ' + array[i].last_name;
+                    console.log(element.manager_id);
+                }
             }
         }
     });
-
+    return array;
 }
 
 
