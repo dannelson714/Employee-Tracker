@@ -12,7 +12,7 @@ function getTeamMember() {
     inquirer
     .prompt(employeeQuestion)
     .then((data) => {
-        
+        questionResult(data)
     })
 }
 
@@ -32,6 +32,14 @@ function questionResult(data) {
             break;
         case 'Add Role':
             addRole();
+            break;
+        case 'View All Departments':
+            viewAllDepartments();
+            break;
+        case 'Add Department':
+            addDepartment();
+            break;
+        case 'Quit':
             break;
     }
 }
