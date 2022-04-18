@@ -20,7 +20,7 @@ const db = mysql.createConnection(
     console.log('Connected to the employees_db database.')
 );
 
-db.query('SELECT * FROM department.name', function (err, results) {
+db.query('SELECT name FROM department', function (err, results) {
     console.log(results);
     console.table(results);
 });
@@ -78,6 +78,13 @@ function addEmployee() {
             roleTitles.push(results[i].title)
         }
     })
+    db.query('SELECT first_name, last_name FROM employee', function(err, results) {
+        let manNames = ['None'];
+        for (i=0; i<results.length; i++) {
+            let fullName = results[i].first_name + " " + results[i].last.name;
+            manNames.push(fullName);
+        }
+    })
     const employeeChoices = [
         {
             type: 'input',
@@ -97,11 +104,11 @@ function addEmployee() {
         },
         {
             type: 'input',
+            message: "Who is the employee's manager? ",
             name: 'empManager',
-            message: "Who is the employee's manager? "
+            choices: manNames
         }
     ]
-
     inquirer
         .prompt(employeeChoices)
         .then((data) => {
@@ -114,19 +121,21 @@ function addEmployee() {
                     }
                 }
             })
-
-            
-            const manName = data.empManger;
-
-            
+            const managerName = data.empManager.split(" ");
+            db.query('SELECT * FROM employee', function(err, results) {
+                let manId = -1;
+                for (i=0; i<results.length; i++) {
+                    if (managerName[0] === results[i].first_name && managerName[1] === results[i].last_name) {
+                        manId = results[i].id;
+                    }
+                }
+            })    
             const empAdd = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-            VALUES (${data.firstName},${data.lastName},${roleTitles},)`
+            VALUES (${data.firstName},${data.lastName},${roleId},${manId})`
 
-            // db.query(, function (err, results) {
-            //     console.log(results);
-            //     console.table(results);
-            // })
-
+            db.query(`${empAdd}`, function (err, results) {
+                console.log(`${data.first_name} ${data.last_name} has been added!`)
+            })
         })
 }
 
