@@ -110,18 +110,17 @@ db.query('SELECT * FROM department.name', function (err, results) {
     console.table(results);
 });
 
+function viewAllRoles() {
 //WHEN I choose to view all roles
 //THEN I am presented with the job title, role id, the department that role belongs to, 
 //and the salary for that role
-
 const roleQuery = `SELECT role.title, role.salary, department.name
 FROM department
 INNER JOIN role ON role.department_id = department.id;`
-
 db.query(`${roleQuery}`, function (err, results) {
-    console.log(results);
     console.table(results);
 })
+}
 
 //WHEN I choose to add a department
 //THEN I am prompted to enter the name of the department and that department is added to the database
@@ -198,6 +197,54 @@ function addEmployee() {
                 console.log(`${data.first_name} ${data.last_name} has been added!`)
             })
         })
+}
+
+function addRole() {
+    //WHEN I choose to add a role
+    //THEN I am prompted to enter the name, salary, and department for the role and that role is added 
+    //to the database
+    db.query('SELECT * FROM department', function(err, results) {
+        let deptNames = [];
+        for (i=0; i<results.length; i++) {
+            deptNames.push(results[i].name)
+        }
+        const roleChoices = [
+            {
+                type: 'input',
+                name: 'roleTitle',
+                message: "What is the name of the new role? "
+            },
+            {
+                type: 'input',
+                name: 'roleSalary',
+                message: "What is the salary of the new role to two decimal places? "
+            },
+            {
+                type: 'list',
+                message: "Which department will the new role be part of? ",
+                name: 'roleDept',
+                choices: deptNames
+            }
+        ]
+        inquirer
+        .prompt(roleChoices)
+        .then((data) => {
+            const deptName = data.deptNames;
+            db.query('SELECT * FROM department', function(err, results) {
+                let deptId = -1;
+                for (i=0; i<results.length; i++) {
+                    if (deptName = results[i].name){
+                        deptId = results[i].id
+                    }
+                }
+            })
+            const roleAdd = `INSERT INTO role (title, salary, department_id)
+            VALUES (${data.roleTitle},${data.roleSalary},${deptId})`;
+            db.query(`${roleAdd}`, function (err, results) {
+                console.log(`${data.roleTitle} has been added as a new role!`)
+            })
+        })
+
 }
 
 

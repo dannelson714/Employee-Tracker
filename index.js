@@ -27,8 +27,12 @@ function questionResult(data) {
         case 'Update Employee Role':
             updateEmployeeRole();
             break;
-
-
+        case 'View All Roles':
+            viewAllRoles();
+            break;
+        case 'Add Role':
+            addRole();
+            break;
     }
 }
 
