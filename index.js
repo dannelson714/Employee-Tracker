@@ -1,3 +1,5 @@
+const inquirer = require('inquirer');
+
 function getTeamMember() {
     const employeeQuestion = [
         {
@@ -13,6 +15,20 @@ function getTeamMember() {
         
     })
 }
+
+function questionResult(data) {
+    switch(data) {
+        case 'View All Employees':
+            showAllEmployees();
+            break;
+        case 'Add Employee':
+
+
+    }
+}
+
+
+
 
 
 // Create a function to initialize app
