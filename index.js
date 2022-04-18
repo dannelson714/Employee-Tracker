@@ -22,6 +22,11 @@ function questionResult(data) {
             showAllEmployees();
             break;
         case 'Add Employee':
+            addEmployee();
+            break;
+        case 'Update Employee Role':
+            updateEmployeeRole();
+            break;
 
 
     }

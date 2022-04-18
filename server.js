@@ -24,8 +24,6 @@ db.query('SELECT name FROM department', function (err, results) {
     console.log(results);
     console.table(results);
 });
-//Functions that will perform the queries as specified. To be moved into modular file.
-
 
 function showAllEmployees(){
 //WHEN I choose to view all employees
@@ -41,6 +39,69 @@ function showAllEmployees(){
         console.table(newList);
     });
 }
+
+function updateEmployeeRole() {
+    //WHEN I choose to update an employee role
+    //THEN I am prompted to select an employee to update and their new role and this information is updated in the database 
+    db.query('SELECT * FROM role', function(err, results) {
+        let upRoleTitles = [];
+        for (i=0; i<results.length; i++) {
+            upRoleTitles.push(results[i].title)
+        }
+    })
+
+    db.query('SELECT first_name, last_name FROM employee', function(err, results) {
+        let empNames = ['None'];
+        for (i=0; i<results.length; i++) {
+            let fullName = results[i].first_name + " " + results[i].last.name;
+            empNames.push(fullName);
+        }
+    })
+    
+    const employeeChoices = [
+        {
+            type:'list',
+            message: "For which employee would you like to update a role?",
+            name: 'empName',
+            choices: empNames
+        },
+        {
+            type: 'list',
+            message: "What is the employee's new role at the company? ",
+            name: 'empRole',
+            choices: upRoleTitles
+        }
+    ]
+    inquirer
+        .prompt(employeeChoices)
+        .then((data) => {
+            let roleTitle = data.empRole;
+            db.query('SELECT * FROM role', function(err, results) {
+                let roleId = -1;
+                for (i=0; i<results.length; i++) {
+                    if (roleTitle = results[i].title){
+                        roleId = results[i].id
+                    }
+                }
+            })
+            const employeeName = data.empName.split(" ");
+            db.query('SELECT * FROM employee', function(err, results) {
+                let empId = -1;
+                for (i=0; i<results.length; i++) {
+                    if (employeeName[0] === results[i].first_name && employeeName[1] === results[i].last_name) {
+                        empId = results[i].id;
+                    }
+                }
+            })
+            db.query(`UPDATE employee SET role_id = ${roleId} WHERE id = ${empId}`, function(err,results) {
+                console.log(`${data.empNames}'s role has been changed to ${empRole}!`)
+            } )
+        })
+}
+
+
+
+
 //WHEN I choose to view all departments
 //THEN I am presented with a formatted table showing department names and department ids
 
