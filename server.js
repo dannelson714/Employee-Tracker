@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cTable = require('console.table');
+const inquirer = require('inquirer');
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -18,10 +19,6 @@ const db = mysql.createConnection(
     console.log('Connected to the employees_db database.')
 );
 
-db.query('SELECT name FROM department', function (err, results) {
-    console.log(results);
-    console.table(results);
-});
 
 function showAllEmployees(){
 //WHEN I choose to view all employees
@@ -29,8 +26,8 @@ function showAllEmployees(){
 //job titles, departments, salaries, and managers that the employees report to
     const empQuery = `SELECT employee.id, employee.first_name, employee.last_name, department.name, role.title, role.salary, employee.manager_id 
     FROM  department
-    INNER JOIN role ON role.department_id = department.id
-    INNER JOIN employee ON role.id = employee.role_id;`;
+    JOIN role ON role.department_id = department.id
+    JOIN employee ON role.id = employee.role_id;`;
 
     db.query(`${empQuery}`, function (err, results) {
         newList = findManagerName(results)
@@ -82,20 +79,22 @@ function updateEmployeeRole() {
                         roleId = results[i].id
                     }
                 }
-            })
-            const employeeName = data.empName.split(" ");
-            db.query('SELECT * FROM employee', function(err, results) {
-                let empId = -1;
-                for (i=0; i<results.length; i++) {
-                    if (employeeName[0] === results[i].first_name && employeeName[1] === results[i].last_name) {
-                        empId = results[i].id;
+                const employeeName = data.empName.split(" ");
+                db.query('SELECT * FROM employee', function(err, results) {
+                    let empId = -1;
+                    for (i=0; i<results.length; i++) {
+                        if (employeeName[0] === results[i].first_name && employeeName[1] === results[i].last_name) {
+                            empId = results[i].id;
+                        }
                     }
-                }
+                    db.query(`UPDATE employee SET role_id = ? WHERE id = ?`, [roleId, empId], function(err,results) {
+                        console.log(`${data.empNames}'s role has been changed to ${empRole}!`);
+                        getTeamMember();
+                    })
+                })
             })
-            db.query(`UPDATE employee SET role_id = ${roleId} WHERE id = ${empId}`, function(err,results) {
-                console.log(`${data.empNames}'s role has been changed to ${empRole}!`);
-                getTeamMember();
-            } )
+            
+            
         })
 }
 
@@ -121,10 +120,6 @@ function viewAllDepartments() {
     })
 }
 
-
-
-//WHEN I choose to add a department
-//THEN I am prompted to enter the name of the department and that department is added to the database
 function addDepartment() {
    //WHEN I choose to add a department
    //THEN I am prompted to enter the name of the department and that department is added to the database
@@ -139,7 +134,7 @@ function addDepartment() {
         .prompt(departmentInput)
         .then((data) => {
             const roleTitle = data.empRole;
-            db.query(`INSERT INTO department (name) VALUES (${data.deptName}`, function(err, results) {
+            db.query(`INSERT INTO department (name) VALUES (${data.deptName})`, function(err, results) {
                 console.log(`${data.deptName} added as a new department!`);
                 getTeamMember();
             })
@@ -149,16 +144,16 @@ function addDepartment() {
 function addEmployee() {
     //WHEN I choose to add an employee
 //THEN I am prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
+    const roleTitles = [];
     db.query('SELECT * FROM role', function(err, results) {
-        let roleTitles = [];
         for (i=0; i<results.length; i++) {
             roleTitles.push(results[i].title)
         }
     })
+    const manNames = ['None'];
     db.query('SELECT first_name, last_name FROM employee', function(err, results) {
-        let manNames = ['None'];
         for (i=0; i<results.length; i++) {
-            let fullName = results[i].first_name + " " + results[i].last.name;
+            let fullName = results[i].first_name + " " + results[i].last_name;
             manNames.push(fullName);
         }
     })
@@ -180,7 +175,7 @@ function addEmployee() {
             choices: roleTitles
         },
         {
-            type: 'input',
+            type: 'list',
             message: "Who is the employee's manager? ",
             name: 'empManager',
             choices: manNames
@@ -190,30 +185,30 @@ function addEmployee() {
         .prompt(employeeChoices)
         .then((data) => {
             const roleTitle = data.empRole;
+            var roleId = -1;
             db.query('SELECT * FROM role', function(err, results) {
-                let roleId = -1;
                 for (i=0; i<results.length; i++) {
-                    if (roleTitle = results[i].title){
+                    if (roleTitle === results[i].title){
                         roleId = results[i].id
                     }
                 }
-            })
-            const managerName = data.empManager.split(" ");
-            db.query('SELECT * FROM employee', function(err, results) {
+                const managerName = data.empManager.split(" ");
                 let manId = -1;
-                for (i=0; i<results.length; i++) {
-                    if (managerName[0] === results[i].first_name && managerName[1] === results[i].last_name) {
-                        manId = results[i].id;
+                db.query('SELECT * FROM employee', function(err, results) {
+                    for (i=0; i<results.length; i++) {
+                        if (managerName[0] === results[i].first_name && managerName[1] === results[i].last_name) {
+                            manId = results[i].id;
+                        }
                     }
-                }
+                    const empAdd = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+                    VALUES (?,?,?,?)`;
+                    db.query(`${empAdd}`,[data.firstName,data.lastName,roleId,manId], function(err, results) {
+                    console.log(`${data.firstName} ${data.lastName} has been added!`);
+                    getTeamMember();
+                })
             })    
-            const empAdd = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-            VALUES (${data.firstName},${data.lastName},${roleId},${manId})`
-
-            db.query(`${empAdd}`, function (err, results) {
-                console.log(`${data.first_name} ${data.last_name} has been added!`);
-                getTeamMember();
             })
+            
         })
 }
 
@@ -255,13 +250,14 @@ function addRole() {
                         deptId = results[i].id
                     }
                 }
-            })
-            const roleAdd = `INSERT INTO role (title, salary, department_id)
-            VALUES (${data.roleTitle},${data.roleSalary},${deptId})`;
-            db.query(`${roleAdd}`, function (err, results) {
+                const roleAdd = `INSERT INTO role (title, salary, department_id)
+                VALUES (?,?,?)`;
+                db.query(`${roleAdd}`,[data.roleTitle, data.roleSalary, deptId], function (err, results) {
                 console.log(`${data.roleTitle} has been added as a new role!`);
                 getTeamMember();
+                })
             })
+            
         })
 }
 
@@ -294,9 +290,9 @@ function getTeamMember() {
         }
     ]
     inquirer
-    .prompt(employeeQuestion)
-    .then((data) => {
-        questionResult(data)
+        .prompt(employeeQuestion)
+        .then((data) => {
+            questionResult(data.topMenu)
     })
 }
 
@@ -329,7 +325,6 @@ function questionResult(data) {
     }
 }
 
-
 app.use((req, res) => {
     res.status(404).end();
 })
@@ -338,3 +333,4 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     getTeamMember();
 })
+
