@@ -27,7 +27,8 @@ function showAllEmployees(){
     const empQuery = `SELECT employee.id, employee.first_name, employee.last_name, department.name, role.title, role.salary, employee.manager_id 
     FROM  department
     JOIN role ON role.department_id = department.id
-    JOIN employee ON role.id = employee.role_id;`;
+    JOIN employee ON role.id = employee.role_id
+    GROUP BY employee.id;`;
 
     db.query(`${empQuery}`, function (err, results) {
         newList = findManagerName(results)
@@ -39,63 +40,62 @@ function showAllEmployees(){
 function updateEmployeeRole() {
     //WHEN I choose to update an employee role
     //THEN I am prompted to select an employee to update and their new role and this information is updated in the database 
+    const upRoleTitles = [];
     db.query('SELECT * FROM role', function(err, results) {
-        let upRoleTitles = [];
         for (i=0; i<results.length; i++) {
             upRoleTitles.push(results[i].title)
         }
-    })
-
-    db.query('SELECT first_name, last_name FROM employee', function(err, results) {
-        let empNames = ['None'];
-        for (i=0; i<results.length; i++) {
-            let fullName = results[i].first_name + " " + results[i].last.name;
-            empNames.push(fullName);
-        }
-    })
-    
-    const employeeChoices = [
-        {
-            type:'list',
-            message: "For which employee would you like to update a role?",
-            name: 'empName',
-            choices: empNames
-        },
-        {
-            type: 'list',
-            message: "What is the employee's new role at the company? ",
-            name: 'empRole',
-            choices: upRoleTitles
-        }
-    ]
-    inquirer
-        .prompt(employeeChoices)
-        .then((data) => {
-            let roleTitle = data.empRole;
-            db.query('SELECT * FROM role', function(err, results) {
-                let roleId = -1;
-                for (i=0; i<results.length; i++) {
-                    if (roleTitle = results[i].title){
-                        roleId = results[i].id
-                    }
+        const empNames = [];
+        db.query('SELECT first_name, last_name FROM employee', function(err, results) {
+            for (i=0; i<results.length; i++) {
+                let fullName = results[i].first_name + " " + results[i].last_name;
+                empNames.push(fullName);
+            }
+            const employeeRoleChoices = [
+                {
+                    type: 'list',
+                    message: "What is the employee's new role at the company? ",
+                    name: 'empRole',
+                    choices: upRoleTitles
+                },
+                {
+                    type:'list',
+                    message: "For which employee would you like to update a role?",
+                    name: 'empName',
+                    choices: empNames
                 }
-                const employeeName = data.empName.split(" ");
-                db.query('SELECT * FROM employee', function(err, results) {
-                    let empId = -1;
-                    for (i=0; i<results.length; i++) {
-                        if (employeeName[0] === results[i].first_name && employeeName[1] === results[i].last_name) {
-                            empId = results[i].id;
+            ]
+            inquirer
+                .prompt(employeeRoleChoices)
+                .then((data) => {
+                    let roleTitle = data.empRole;
+                    db.query('SELECT * FROM role', function(err, results) {
+                        let roleId = -1;
+                        for (i=0; i<results.length; i++) {
+                            if (roleTitle === results[i].title){
+                                roleId = results[i].id
+                                roleId
+                            }
                         }
-                    }
-                    db.query(`UPDATE employee SET role_id = ? WHERE id = ?`, [roleId, empId], function(err,results) {
-                        console.log(`${data.empNames}'s role has been changed to ${empRole}!`);
-                        getTeamMember();
+                        const employeeName = data.empName.split(" ");
+                        db.query('SELECT * FROM employee', function(err, results) {
+                            let empId = -1;
+                            for (i=0; i<results.length; i++) {
+                                if (employeeName[0] === results[i].first_name && employeeName[1] === results[i].last_name) {
+                                    empId = results[i].id;
+                                }
+                            }
+                            db.query(`UPDATE employee SET role_id = ? WHERE id = ?`, [roleId, empId], function(err,results) {
+                                console.log(`${data.empName}'s role has been changed to ${data.empRole}!`);
+                                getTeamMember();
+                            })
+                        })
                     })
+                    
+                    
                 })
-            })
-            
-            
         })
+    })  
 }
 
 function viewAllRoles() {
@@ -133,8 +133,7 @@ function addDepartment() {
     inquirer
         .prompt(departmentInput)
         .then((data) => {
-            const roleTitle = data.empRole;
-            db.query(`INSERT INTO department (name) VALUES (${data.deptName})`, function(err, results) {
+            db.query(`INSERT INTO department (name) VALUES (?)`, [data.deptName], function(err, results) {
                 console.log(`${data.deptName} added as a new department!`);
                 getTeamMember();
             })
@@ -193,7 +192,7 @@ function addEmployee() {
                     }
                 }
                 const managerName = data.empManager.split(" ");
-                let manId = -1;
+                let manId = null;
                 db.query('SELECT * FROM employee', function(err, results) {
                     for (i=0; i<results.length; i++) {
                         if (managerName[0] === results[i].first_name && managerName[1] === results[i].last_name) {
@@ -216,8 +215,8 @@ function addRole() {
     //WHEN I choose to add a role
     //THEN I am prompted to enter the name, salary, and department for the role and that role is added 
     //to the database
+    const deptNames = [];
     db.query('SELECT * FROM department', function(err, results) {
-        let deptNames = [];
         for (i=0; i<results.length; i++) {
             deptNames.push(results[i].name)
         }})
@@ -242,11 +241,11 @@ function addRole() {
         inquirer
         .prompt(roleChoices)
         .then((data) => {
-            const deptName = data.deptNames;
+            const deptName = data.roleDept;
             db.query('SELECT * FROM department', function(err, results) {
                 let deptId = -1;
                 for (i=0; i<results.length; i++) {
-                    if (deptName = results[i].name){
+                    if (deptName === results[i].name){
                         deptId = results[i].id
                     }
                 }
@@ -265,15 +264,16 @@ function findManagerName(array) {
     //A function to convert from a manager name to an integer id so as to add new employees according to the
     //table designs
     array.forEach(element => {
-        console.log(element.manager_id);
         if (element.manager_id) {
-            console.log(element.manager_id);
             for (i=0; i<array.length; i++) {
                 if (element.manager_id === array[i].id) {
                     element.manager_id = array[i].first_name + ' ' + array[i].last_name;
-                    console.log(element.manager_id);
+
                 }
             }
+        }
+        else {
+            element.manager_id = null
         }
     });
     return array;
