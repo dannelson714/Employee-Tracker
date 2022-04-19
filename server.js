@@ -28,7 +28,7 @@ function showAllEmployees(){
     FROM  department
     JOIN role ON role.department_id = department.id
     JOIN employee ON role.id = employee.role_id
-    GROUP BY employee.id;`;
+    ORDER BY employee.id ASC;`;
 
     db.query(`${empQuery}`, function (err, results) {
         newList = findManagerName(results)
